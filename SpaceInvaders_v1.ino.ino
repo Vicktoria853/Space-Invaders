@@ -141,7 +141,7 @@ void rotary_encoder()
    aLastState = aState;
    
    if(digitalRead(ENCODER_SWITCH) == LOW )
-  {
+   {
       if(bnt_was_pressed == 0 && amuno.active == false)
       {
          Serial.println("The button is pressed!");
@@ -165,16 +165,25 @@ void moving_bullets()
 {
   if(amuno.active == false)
     return;
-  if(amuno.y < 0)
+  unsigned long temp_time = millis() - 1000;
+  if(amuno.x < 0)
   {
     
     amuno.active = false;
   }
-  else if((millis() + 1000 > amuno.fired_at) && amuno.active == true)
+  
+  else if(( temp_time> amuno.fired_at) && amuno.active == true)
   {
     leds[matrix[ amuno.x ][ amuno.y]] = CRGB(0, 0, 0);
-    amuno.y += 1;
+    amuno.x -= 1;
+    if(amuno.x < 0)
+    {
+        amuno.active = false;
+        return;
+      }
     leds[matrix[ amuno.x ][ amuno.y]] = CRGB(10, 100, 100);
+    amuno.fired_at = millis();
+    
    }
 }
 
