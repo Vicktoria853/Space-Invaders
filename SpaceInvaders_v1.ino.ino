@@ -46,27 +46,27 @@ void setup() {
               pinMode(ENCODER_SWITCH, INPUT_PULLUP);
               //Serial.begin(9600);
               //>>>>>>>>>>
-     /*       
+           
               for(int i = 0; i < 64; i+=8)
               {
                 if((i/8) % 2 == 0)
                 {  
                   for(int k = i + 7; k >=i; k--)
                   {
-                  matrix[ (i/8)%2 ][7-k%8] = k;
+                  matrix[ (i/8) ][7-k%8] = k;
                   }
                 }
                 else{
                   for(int k = i; k <= i + 7; k++)
                   {
-                     matrix[ (i/8)%2][k % 8] = k;
+                     matrix[ (i/8)][k % 8] = k;
                   }
                   
                  
                   }
                   
-              }*/
-
+              }
+/*
               for(int i = 7; i >=0; i--)
               {
                   matrix[0][7-i] = i;
@@ -107,7 +107,7 @@ void setup() {
                   matrix[7][i%8] = i;
               }
               //>>>>>>>>>>>>
-              
+     */
               
               aLastState = digitalRead(outputA);
               //num_bullets = 0;
@@ -190,19 +190,10 @@ void moving_bullets()
 
 void loop() {
 
-/*
-for(int i = 0; i< 8; i++)
-{
-  for(int k = 0; k < 8; k++)  
-  {
-    leds[matrix[i][k]] = CRGB(200, 0, 0);
-    delay(50);
-    FastLED.show();
-   
-  }
-  }
-  */
+
   //leds = CRGB(100, 100, 100);
+
+  
   rotary_encoder();
   leds[matrix[6][counter]] = CRGB(100, 0, 0);
   moving_bullets();
@@ -217,3 +208,17 @@ for(int i = 0; i< 8; i++)
 
 }
 
+// little test for the board
+/*
+for(int i = 0; i< 8; i++)
+{
+  for(int k = 0; k < 8; k++)  
+  {
+    leds[matrix[i][k]] = CRGB(200, 0, 0);
+    delay(50);
+    FastLED.show();
+   
+  }
+  }
+  */
+  
