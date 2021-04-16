@@ -7,17 +7,33 @@
 #define outputA 6
 #define outputB 7
 
+// encoder
+int counter = 0;
+int aState;
+int aLastState;
+int bnt_was_pressed;
+
+//the ending of the game
 bool the_end;
 
+//
 struct bullet{
   int x;
   int y;
   unsigned long fired_at;
-  bool hero;
   bool active; 
 };
 bullet amuno;
-int bullet_speed = 500;
+
+int hearts;
+unsigned long finished = 0;
+
+
+
+//for all bullets
+unsigned long bullet_speed = 500;
+
+
 
 struct alien{
   int x;
@@ -25,43 +41,39 @@ struct alien{
   bool hit;
   };
 
+unsigned long order_to_fire;
 alien army[8];
+bullet al_amuno[3];
+int active_al_bullets;
 unsigned long alien_speed;
 
-int counter = 0;
-int aState;
-int aLastState;
-//hero, aliens, bullets X2 hearts
-CRGB colours[5];
 
-
-
-int bnt_was_pressed;
-
-
+// the board
 CRGB leds[NUM_LEDS];
 int matrix[8][8]; // 
 
 void setup() {
-             colours[0] = (0, 100, 100); // hero
-             colours[1] = (255, 0, 0); // alien
-             colours[2] = (10, 100, 100); // hero's bullet
-             colours[3] = (100, 100, 0); // aliens' bullet
-             colours[4] = (10, 100, 0); // hearts == live
+              hearts = 3;
               amuno.x = 0;
               amuno.y = 0;
               amuno.active = false;
-              amuno.hero = true; // who shots it
-              amuno.x = 5;
-              amuno.y = 0;
+              for(int i = 0; i < 3; i++)
+              {
+                al_amuno[i].x = 0;
+                al_amuno[i].y = 7;
+                al_amuno[i].active = false;    
+                al_amuno[i].fired_at = millis();
+              }
+              active_al_bullets = 0;
+              order_to_fire = millis();
+              
               bnt_was_pressed = 0;
               FastLED.addLeds<WS2812, LED_PIN, GRB>(leds, NUM_LEDS);
               pinMode(outputA, INPUT);
               pinMode(outputB, INPUT);
               pinMode(ENCODER_SWITCH, INPUT_PULLUP);
-              Serial.begin(9600);
-              //>>>>>>>>>>
-           
+
+           //the init of the boards as matrix
               for(int i = 0; i < 64; i+=8)
               {
                 if((i/8) % 2 == 0)
@@ -94,28 +106,44 @@ void setup() {
 
 
 void rotary_encoder();
-void moving_bullets();
+void moving_bullet();
 void moving_aliens();
+void round_bullet();
 void win();
 void lose();
 
 void loop() {
+  unsigned long prag = millis(); 
+  if(prag> 60000)
+  {
+    win();
+    while(1);
+  }
+  if(finished + 12000 < prag)
+  {
+    leds[matrix[7][7 - finished/12000]] = CRGB(0, 255, 0);//colours[0];//CRGB(100, 0, 0);
+    finished+=12000;
+  }
   if(the_end == true)
   {
+    lose();
     while(1);
     }
   else{
 
   
   rotary_encoder();
-  leds[matrix[6][counter]] = colours[0];//CRGB(100, 0, 0);
-  moving_bullets();
+  leds[matrix[6][counter]] = CRGB(0, 255, 100);//colours[0];//CRGB(100, 0, 0);
+  moving_bullet();
   if(amuno.active == true)
   {
-    leds[matrix[amuno.x][amuno.y]] = colours[2];// CRGB(10, 100, 100);
+    leds[matrix[amuno.x][amuno.y]] = CRGB(0, 100, 100); //colours[2];// CRGB(10, 100, 100);
   }
   
-  
+  for(int i = 0; i < hearts; i++)
+  {
+    leds[matrix[7][i]] = CRGB(255, 255, 0); //colours[2];// CRGB(10, 100, 100); 
+  }
    for(int i = 0; i< 8; i++)
    {
     //Serial.println("Hi");
@@ -127,7 +155,12 @@ void loop() {
     }
     
     }
-   moving_aliens();
+  unsigned long temp = millis();
+  if(temp > order_to_fire + bullet_speed + 500)
+  {
+    round_bullet();
+  }
+  moving_aliens();
   FastLED.show();
   }
 
@@ -155,7 +188,7 @@ void rotary_encoder()
         }
    Serial.print("Position: ");
    Serial.println(counter);
-  leds[matrix[6][counter]] = colours[0];//CRGB(100, 0, 0);
+  leds[matrix[6][counter]] = CRGB(0, 255, 100); //colours[0];//CRGB(100, 0, 0);
    }
    aLastState = aState;
    
@@ -179,7 +212,68 @@ void rotary_encoder()
      
 }
 
-void moving_bullets()
+void round_bullet()
+{
+  //if(millis() < alien_speed + order_to_fire)
+   //    return;
+  order_to_fire = millis();
+    for(int i = 0; i< 3; i++)
+    {/*
+      unsigned long temp = millis();
+      if(al_amuno[i].fired_at + bullet_speed > temp)
+      {*/
+        
+        leds[matrix[al_amuno[i].x][al_amuno[i].y]] = CRGB(0, 0, 0);
+        if(al_amuno[i].x + 1 == 6 )//al_bullets[i].active == true )
+        {
+          if(al_amuno[i].y == counter)
+          {
+              hearts--;
+              leds[matrix[7][hearts]] = CRGB(0, 0, 0); //colours[2];// CRGB(10, 100, 100); 
+              if(hearts == 0)
+              {
+                lose(); 
+                return;
+              }
+              else 
+              {
+                  long al_fire = random(8);
+                  if(army[al_fire].x == 5)
+                    al_fire = random(8);
+                  al_amuno[i].x = army[al_fire].x +1;
+                  al_amuno[i].y = army[al_fire].y;
+                  //al_amuno[i].fired_at = millis();
+                  //leds[matrix[al_amuno[i].x][al_amuno[i].y]] = CRGB(220, 20, 60);
+                
+              }         
+          }
+          else{
+            long al_fire = random(8);
+            if(army[al_fire].x == 5)
+              al_fire = random(8);
+            al_amuno[i].x = army[al_fire].x +1;
+            al_amuno[i].y = army[al_fire].y;
+            //al_amuno[i].fired_at = millis();
+            //leds[matrix[al_amuno[i].x][al_amuno[i].y]] = CRGB(220, 20, 60);
+            }
+          
+          
+        }
+        else
+        {
+          al_amuno[i].x += 1;
+          //leds[matrix[al_amuno[i].x][al_amuno[i].y]] = CRGB(220, 20, 60);
+          
+         }
+         leds[matrix[al_amuno[i].x][al_amuno[i].y]] = CRGB(220, 20, 60);
+      
+      
+      
+    }  
+  
+}
+
+void moving_bullet()
 {
   
   if(amuno.active == false)
@@ -193,7 +287,7 @@ void moving_bullets()
       leds[matrix[ amuno.x ][ amuno.y]] = CRGB(0, 0, 0);
       return;
   }
-  unsigned long temp_time = millis() - 500;
+  unsigned long temp_time = millis() - bullet_speed;
   if(amuno.x < 0)
   {
     
@@ -217,18 +311,15 @@ void moving_bullets()
 
 void moving_aliens()
 {
-  
-  //Serial.println("The beginning");
   unsigned long temp = millis();// - 1000;
   
   if(alien_speed + 5000 > temp)
-  {
-    
-          return;
-        
+  { 
+          //round_bullet();
+          return;  
  }
   
-  int left = 0;
+  //int left = 0;
   for(int i = 0; i< 8; i++)
   {
     
@@ -242,7 +333,7 @@ void moving_aliens()
             army[i].hit = true;
             amuno.active = false;
             leds[matrix[amuno.x][amuno.y]] = CRGB(0, 0, 0);
-            left+=1;
+            //left+=1;
             
             
         }
@@ -257,15 +348,21 @@ void moving_aliens()
 
     } 
     
-    else
-    {
+   else
+   {
+        army[i].x = 0;
+        army[i].hit = false;
+    
+    }
+   
+     /*{
       left += 1;
       
-    }
+    }*/
  
   }
   
-  if(left == 8)
+  /*if(left == 8)
   {
     for(int i = 0; i< 8; i++)
     {
@@ -273,7 +370,7 @@ void moving_aliens()
         army[i].y = i;
         army[i].hit = false;
     }
-  }
+  }*/
  alien_speed = millis();
  // FastLED.show();
   
